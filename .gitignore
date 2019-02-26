@@ -7,3 +7,5 @@
 /MarkLogic/xqrs/src/main/webapp/xqDoc/node_modules
 /MarkLogic/services/src/main/ml-modules/root/xqDoc
 /MarkLogic/services/.gradle
+/MarkLogic/xqrs/src/main/ml-modules/root/xqDoc
+/MarkLogic/xqrs/.gradle
