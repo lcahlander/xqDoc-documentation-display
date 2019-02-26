@@ -2,3 +2,6 @@
 /MarkLogic/services/src/main/webapp/xqDoc/build
 /MarkLogic/services/src/main/webapp/xqDoc/node_modules
 /MarkLogic/services/src/main/webapp/xqDoc/package-lock.json
+/MarkLogic/xqrs/src/main/webapp/xqDoc/package-lock.json
+/MarkLogic/xqrs/src/main/webapp/xqDoc/build
+/MarkLogic/xqrs/src/main/webapp/xqDoc/node_modules
