@@ -1,0 +1,97 @@
+import org.apache.tools.ant.filters.BaseFilterReader
+import org.apache.tools.ant.taskdefs.condition.Os
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.xqdoc:xqdoc:1.9.6"
+        classpath "com.marklogic:marklogic-unit-test-client:0.12.0"
+    }
+}
+
+plugins {
+  id "net.saliman.properties" version "1.4.6"
+  id "com.marklogic.ml-gradle" version "3.10.1"
+}
+
+repositories {
+  jcenter()
+  maven { url "http://developer.marklogic.com/maven2/" }
+  maven { url "http://repository.cloudera.com/artifactory/cloudera-repos/" }
+}
+
+configurations {
+  mlcp {
+    resolutionStrategy {
+      force "xml-apis:xml-apis:1.4.01"
+    }
+  }
+}
+
+dependencies {
+    mlcp "com.marklogic:mlcp:9.0.6"
+    mlRestApi "com.marklogic:marklogic-unit-test-modules:0.12.0"
+    mlcp files("marklogic/lib")
+}
+
+class XQDocFilter extends BaseFilterReader {
+    XQDocFilter(Reader input) {
+        super(new StringReader(new org.xqdoc.MarkLogicProcessor().process(input.text)))
+    }
+}
+
+
+task generateXQDocs(type: Copy) {
+  into 'xqDoc'
+  from 'src/main/ml-modules'
+  include '**/*.xqy'
+  rename { it - '.xqy' + '.xml' } 
+  includeEmptyDirs = false
+  filter XQDocFilter
+}
+
+/**
+ * Seed original Glossary Manager sample data
+ */
+ task loadXQDocs(type: com.marklogic.gradle.task.MlcpTask) {
+  classpath = configurations.mlcp
+  command = "IMPORT"
+  database = "emh-accelerator-content"
+  input_file_path = "xqDoc"
+  output_collections = "xqdoc"
+  output_uri_replace = ".*xqDoc,'/xqDoc'"
+  document_type = "mixed"
+}
+
+
+/**
+ * Polymer 
+ */
+
+task npmInstallXQDoc(type: Exec) {
+    String npm = 'npm';
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        npm = 'npm.cmd'
+    }
+    workingDir 'src/main/webapp/xqDoc'
+    commandLine npm, 'install'
+}
+
+task polymerBuildXQDoc(type: Exec) {
+    String polymer = 'polymer';
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        polymer = 'polymer.cmd'
+    }
+    workingDir 'src/main/webapp/xqDoc'
+    commandLine polymer, 'build'
+}
+
+
+task copyPolymerXQDoc(type: Copy) {
+  into 'src/main/ml-modules/root/xqDoc'
+  from 'src/main/webapp/xqDoc/build/default'
+}
+
