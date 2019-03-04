@@ -95,3 +95,12 @@ task copyPolymerXQDoc(type: Copy) {
   from 'src/main/webapp/xqDoc/build/default'
 }
 
+
+def xqDocTree = fileTree(dir:'xqDoc', excludes:['openapi.json'])
+task fsTeardownXQDocs(type: Delete) {
+  delete xqDocTree
+}
+
+task dbTeardownXQDocs(type: com.marklogic.gradle.task.datamovement.DeleteCollectionsTask) {
+  collections = ['xqdoc']
+}
