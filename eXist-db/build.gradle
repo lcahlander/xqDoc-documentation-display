@@ -1,0 +1,71 @@
+import org.apache.tools.ant.filters.BaseFilterReader
+import org.apache.tools.ant.taskdefs.condition.Os
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.xqdoc:xqdoc:1.9.6"
+    }
+}
+
+repositories {
+  jcenter()
+}
+
+class XQDocFilter extends BaseFilterReader {
+    XQDocFilter(Reader input) {
+        super(new StringReader(new org.xqdoc.ExistDBProcessor().process(input.text)))
+    }
+}
+
+/**
+ * Polymer 
+ */
+
+task npmInstall(type: Exec) {
+    String npm = 'npm';
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        npm = 'npm.cmd'
+    }
+    workingDir 'src/main/polymer'
+    commandLine npm, 'install'
+}
+
+task polymerBuild(type: Exec) {
+    String polymer = 'polymer';
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        polymer = 'polymer.cmd'
+    }
+    workingDir 'src/main/polymer'
+    commandLine polymer, 'build'
+}
+
+task generateXQDocs(type: Copy) {
+  into 'xqDoc'
+  from 'src/main/ml-modules'
+  include '**/*.xq*'
+  rename { it - '.xq*' + '.xml' } 
+  includeEmptyDirs = false
+  eachFile { println it }
+  filter XQDocFilter
+}
+
+def xqDocTree = fileTree(dir:'xqDoc', excludes:['openapi.json'])
+task fsTeardownXQDocs(type: Delete) {
+  delete xqDocTree
+}
+
+task buildXAR(type: Zip) {
+   from 'build/default/'
+   include '*'
+   include '*/*' //to include contents of a folder present inside build/default directory
+   archiveName 'xqdoc.xar'
+   destinationDir(file('build/'))
+}
+
+// Task dependencies
+generateXQDocs.mustRunAfter(fsTeardownXQDocs)
+

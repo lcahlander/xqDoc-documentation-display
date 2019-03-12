@@ -9,3 +9,5 @@
 /MarkLogic/services/.gradle
 /MarkLogic/xqrs/src/main/ml-modules/root/xqDoc
 /MarkLogic/xqrs/.gradle
+/eXist-db/src/main/polymer/node_modules
+/eXist-db/build
