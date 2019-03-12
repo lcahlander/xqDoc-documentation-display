@@ -43,9 +43,24 @@ task polymerBuild(type: Exec) {
     commandLine polymer, 'build'
 }
 
+task copyPolymer(type: Copy) {
+  into 'build/default'
+  from 'src/main/polymer/build/default'
+}
+
+task copyModules(type: Copy) {
+  into 'build/default'
+  from 'src/main/xquery'
+}
+
+task copyResources(type: Copy) {
+  into 'build/default'
+  from 'src/main/resources'
+}
+
 task generateXQDocs(type: Copy) {
   into 'xqDoc'
-  from 'src/main/ml-modules'
+  from 'src/main/xquery'
   include '**/*.xq*'
   rename { it - '.xq*' + '.xml' } 
   includeEmptyDirs = false
