@@ -81,6 +81,16 @@ task buildXAR(type: Zip) {
    destinationDir(file('build/'))
 }
 
+
+
 // Task dependencies
+buildXAR.dependsOn copyPolymer
+buildXAR.dependsOn copyModules
+buildXAR.dependsOn copyResources
+copyPolymer.dependsOn polymerBuild
+polymerBuild.dependsOn npmInstall
+
+
+
 generateXQDocs.mustRunAfter(fsTeardownXQDocs)
 
