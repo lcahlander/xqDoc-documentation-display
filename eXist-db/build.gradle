@@ -61,8 +61,8 @@ task fsTeardownXQDocs(type: Delete) {
 task buildXAR(type: Zip) {
    from 'build/default/'
    include '*'
-   include '*/*' //to include contents of a folder present inside build/default directory
-   archiveName 'xqdoc.xar'
+   include '*/**' //to include contents of a folder present inside build/default directory
+   archiveName 'xqdoc-2.0.0.xar'
    destinationDir(file('build/'))
 }
 

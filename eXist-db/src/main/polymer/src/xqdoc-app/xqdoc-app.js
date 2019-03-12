@@ -66,7 +66,7 @@ class XqdocApp extends PolymerElement {
       <iron-location id="sourceLocation" query="{{query}}" hash="{{hash}}"></iron-location>
       <iron-query-params id="sourceParams" params-string="{{query}}" params-object="{{params}}"></iron-query-params>
       <iron-ajax auto="true" 
-        url="/get-xqdoc"  
+        url="/exist/restxq/xqdoc"  
         params="[[params]]"
         handle-as="json"
         last-response="{{result}}"></iron-ajax>

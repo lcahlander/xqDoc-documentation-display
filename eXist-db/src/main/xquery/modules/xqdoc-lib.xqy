@@ -423,6 +423,7 @@ $module as xs:string?
 )
 {
     let $doc := (
+        fn:doc("/db/system/xqdoc/apps/xqdoc/services/xqdoc.xml")/xqdoc:xqdoc,
     fn:collection($xq:XQDOC_COLLECTION)/xqdoc:xqdoc[xqdoc:module/xqdoc:uri = $module],
     fn:doc($module)/xqdoc:xqdoc
     )[1]
@@ -467,7 +468,7 @@ $module as xs:string?
                         "version": $doc/xqdoc:control/xqdoc:version/text()
                     },
                     "comment": xq:comment($module-comment),
-                    "uri": $module,
+                    "uri": $doc/xqdoc:module/xqdoc:uri/text(),
                     "name":
                     if ($doc/xqdoc:module/xqdoc:name)
                     then
