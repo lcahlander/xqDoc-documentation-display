@@ -19,6 +19,8 @@ import '@polymer/paper-toolbar/paper-toolbar.js';
 import '@polymer/paper-listbox/paper-listbox.js';
 import '@polymer/iron-location/iron-location.js';
 import '@polymer/iron-location/iron-query-params.js';
+import '@vaadin/vaadin-grid/vaadin-grid.js';
+import '@vaadin/vaadin-grid/vaadin-grid-tree-column.js';
 import './module-selector.js';
 import './xqdoc-module.js';
 import './variable-detail.js';
@@ -66,6 +68,10 @@ class XqdocApp extends PolymerElement {
       <iron-location id="sourceLocation" query="{{query}}" hash="{{hash}}"></iron-location>
       <iron-query-params id="sourceParams" params-string="{{query}}" params-object="{{params}}"></iron-query-params>
       <iron-ajax auto="true" 
+        url="/exist/restxq/xqdoc/tree"  
+        handle-as="json"
+        on-response="getlist"></iron-ajax>
+      <iron-ajax auto="true" 
         url="/exist/restxq/xqdoc"  
         params="[[params]]"
         handle-as="json"
@@ -76,16 +82,9 @@ class XqdocApp extends PolymerElement {
             <div main-title>Modules</div>
           </app-toolbar>
           <section style="height: 100%; overflow: auto;">
-        <paper-listbox attr-for-selected="item-name" selected="{{selectedSuggestionId}}" fallback-selection="None">
-          <h3>Libraries</h3>
-          <template is="dom-repeat" items="[[result.modules.libraries]]">
-            <paper-item item-name="[[item.uri]]">[[item.uri]]</paper-item>
-          </template>
-          <h3>Mains</h3>
-          <template is="dom-repeat" items="[[result.modules.main]]">
-            <paper-item item-name="[[item.uri]]">[[item.uri]]</paper-item>
-          </template>
-        </paper-listbox>
+            <vaadin-grid id="directory">
+              <vaadin-grid-tree-column path="name" header="Name"></vaadin-grid-tree-column>
+            </vaadin-grid>
           <div style="margin-bottom:90px;width:100%;"></div>
         </section>
         </app-drawer>
@@ -120,6 +119,7 @@ class XqdocApp extends PolymerElement {
   }
   static get properties() {
     return {
+      list: { type: Array, notify: true },
       result: { type: Object, notify: true },
       params: { type: Object, notify: true },
       hash: { type: String, notify: true, observer: '_hashChanged' },
@@ -171,6 +171,12 @@ class XqdocApp extends PolymerElement {
         this.notifyPath('params');
       }
     }
+  }
+
+  getlist(request) {
+    var myResponse = request.detail.response;
+    console.log(myResponse);
+    this.$.directory.items = myResponse;
   }
 }
 

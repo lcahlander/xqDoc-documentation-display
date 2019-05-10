@@ -22,7 +22,7 @@ declare namespace xqdoc = "http://www.xqdoc.org/1.0";
  :  The xqDoc XML for all modules should be stored into the
  :  XML database with this collection value.
  :)
-declare variable $xq:XQDOC_COLLECTION as xs:string := "/db/system/xqdoc/";
+declare variable $xq:XQDOC_COLLECTION as xs:string := "/db/system/xqdoc";
 
 (:~
   Generates the JSON for an xqDoc comment
@@ -403,6 +403,43 @@ declare function xq:imports($imports as node()*) {
             "uri": fn:substring(fn:substring($uri, 1, fn:string-length($uri) - 1), 2),
             "type": xs:string($import/@type)
         }
+};
+
+declare function xq:nested($path as xs:string)
+{
+    array {
+        for $item in xmldb:get-child-resources($path)
+        let $full-path := $path || "/" || $item
+        return map {
+            "name" : $item,
+            "fullpath" : $full-path
+        },
+        for $item in xmldb:get-child-collections($path)
+        let $full-path := $path || "/" || $item
+        return map {
+            "name" : $item,
+            "fullpath" : $full-path,
+            "children" : xq:nested($full-path)
+        }
+    }
+};
+
+(:~
+  Gets the xqDoc of a module as JSON
+  @param $module The URI of the module to display
+  @author Loren Cahlander
+  @version 1.0
+  @since 1.0
+ :)
+declare
+%rest:GET
+%rest:path("/xqdoc/tree")
+%rest:produces("application/json")
+%output:media-type("application/json")
+%output:method("json")
+function xq:get-tree()
+{
+    xq:nested($xq:XQDOC_COLLECTION)
 };
 
 (:~
