@@ -470,7 +470,7 @@ function xq:get-level($page as xs:integer*, $size as xs:integer*, $path as xs:st
             for $item in $resources
             let $full-path := $path || "/" || $item
             return map {
-                "name" : $item,
+                "name" : fn:substring-before($item, ".xml"),
                 "fullpath" : $full-path,
                 "hasChildren": fn:false()
             },
