@@ -83,7 +83,7 @@ class XqdocApp extends PolymerElement {
           </app-toolbar>
           <section style="height: 100%; overflow: auto;">
             <vaadin-grid id="directory">
-              <vaadin-grid-tree-column path="name" header="Name"></vaadin-grid-tree-column>
+              <vaadin-grid-tree-column path="name" header="Name"item-has-children-path="hasChildren"></vaadin-grid-tree-column>
             </vaadin-grid>
           <div style="margin-bottom:90px;width:100%;"></div>
         </section>
@@ -131,6 +131,28 @@ class XqdocApp extends PolymerElement {
   connectedCallback() {
     super.connectedCallback();
 
+    this.$.directory.dataProvider = function(params, callback) {
+
+      let url = "/exist/restxq/xqdoc/level" +
+      '?page=' + params.page +         // the requested page index
+      '&per_page=' + params.pageSize; // number of items on the page
+
+      if (params.parentItem) {
+        url += '&path=' + params.parentItem.fullpath;
+      }
+
+      var xhr = new XMLHttpRequest();
+      xhr.onload = function() {
+        var response = JSON.parse(xhr.responseText);
+        callback(
+          response.data, // requested page of items
+          response.totalSize  // total number of items
+        );
+      };
+      xhr.open('GET', url, true);
+      xhr.send();
+    };
+
     // If there is a hash, wait 2.5 seconds and then call _hashChanged to scroll to the hash.
 
     var myHash = this.get('hash');
@@ -176,8 +198,9 @@ class XqdocApp extends PolymerElement {
   getlist(request) {
     var myResponse = request.detail.response;
     console.log(myResponse);
-    this.$.directory.items = myResponse;
+//    this.$.directory.items = myResponse;
   }
+
 }
 
 window.customElements.define('xqdoc-app', XqdocApp);

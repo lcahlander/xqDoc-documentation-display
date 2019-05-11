@@ -451,6 +451,50 @@ function xq:get-tree()
  :)
 declare
 %rest:GET
+%rest:path("/xqdoc/level")
+%rest:query-param("page", "{$page}")
+%rest:query-param("per_page", "{$size}")
+%rest:query-param("path", "{$path}")
+%rest:produces("application/json")
+%output:media-type("application/json")
+%output:method("json")
+function xq:get-level($page as xs:integer*, $size as xs:integer*, $path as xs:string*)
+{
+    let $spath := $xq:XQDOC_COLLECTION || $path[1]
+    let $resources := xmldb:get-child-resources($spath)
+    let $collections := xmldb:get-child-collections($spath)
+    let $count := fn:count(($resources, $collections))
+    return map {
+        "totalSize": $count,
+        "data": array {
+            for $item in $resources
+            let $full-path := $path || "/" || $item
+            return map {
+                "name" : $item,
+                "fullpath" : $full-path,
+                "hasChildren": fn:false()
+            },
+            for $item in $collections
+            let $full-path := $path || "/" || $item
+            return map {
+                "name" : $item,
+                "fullpath" : $full-path,
+                "hasChildren": fn:true()
+            }
+
+        }
+    }
+};
+
+(:~
+  Gets the xqDoc of a module as JSON
+  @param $module The URI of the module to display
+  @author Loren Cahlander
+  @version 1.0
+  @since 1.0
+ :)
+declare
+%rest:GET
 %rest:path("/xqdoc")
 %rest:produces("application/json")
 %output:media-type("application/json")
