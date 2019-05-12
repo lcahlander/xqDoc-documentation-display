@@ -495,51 +495,19 @@ function xq:get-level($page as xs:integer*, $size as xs:integer*, $path as xs:st
  :)
 declare
 %rest:GET
-%rest:path("/xqdoc")
+%rest:path("/xqdoc/module")
+%rest:query-param("module", "{$module}")
 %rest:produces("application/json")
 %output:media-type("application/json")
 %output:method("json")
 function xq:get(
-$module as xs:string?
+$module as xs:string*
 )
 {
-    let $doc := (
-        fn:doc("/db/system/xqdoc/apps/xqdoc/services/xqdoc.xml")/xqdoc:xqdoc,
-    fn:collection($xq:XQDOC_COLLECTION)/xqdoc:xqdoc[xqdoc:module/xqdoc:uri = $module],
-    fn:doc($module)/xqdoc:xqdoc
-    )[1]
+    let $doc := fn:doc($xq:XQDOC_COLLECTION || xmldb:decode($module[1]))/xqdoc:xqdoc
     let $module-comment := $doc/xqdoc:module/xqdoc:comment
     return
         map {
-            "modules": map {
-                "libraries": array {
-                    for $uri in fn:collection($xq:XQDOC_COLLECTION)/xqdoc:xqdoc/xqdoc:module[@type = "library"]/xqdoc:uri/text()
-                        order by $uri
-                    return
-                        map {
-                            "uri": $uri,
-                            "selected":
-                            if ($uri = $module)
-                            then
-                                fn:true()
-                            else
-                                fn:false()
-                        }
-                },
-                "main": array {
-                    for $module in fn:collection($xq:XQDOC_COLLECTION)/xqdoc:xqdoc[xqdoc:module/@type = "main"]
-                    let $uri := xs:string(fn:base-uri($module))
-                        order by $uri
-                    return
-                        map {
-                            "uri": $uri,
-                            "selected": if ($uri = $module) then
-                                fn:true()
-                            else
-                                fn:false()
-                        }
-                }
-            },
             "response":
             if ($doc)
             then

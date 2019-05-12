@@ -67,12 +67,8 @@ class XqdocApp extends PolymerElement {
       </style>
       <iron-location id="sourceLocation" query="{{query}}" hash="{{hash}}"></iron-location>
       <iron-query-params id="sourceParams" params-string="{{query}}" params-object="{{params}}"></iron-query-params>
-      <iron-ajax auto="true" 
-        url="/exist/restxq/xqdoc/tree"  
-        handle-as="json"
-        on-response="getlist"></iron-ajax>
-      <iron-ajax auto="true" 
-        url="/exist/restxq/xqdoc"  
+      <iron-ajax auto="true" id="getdoc"
+        url="/exist/restxq/xqdoc/module"  
         params="[[params]]"
         handle-as="json"
         last-response="{{result}}"></iron-ajax>
@@ -82,7 +78,7 @@ class XqdocApp extends PolymerElement {
             <div main-title>Modules</div>
           </app-toolbar>
           <section style="height: 100%; overflow: auto;">
-            <vaadin-grid id="directory">
+            <vaadin-grid id="directory" selected-items="{{selected}}">
               <vaadin-grid-tree-column path="name" header="Name"item-has-children-path="hasChildren"></vaadin-grid-tree-column>
             </vaadin-grid>
           <div style="margin-bottom:90px;width:100%;"></div>
@@ -122,6 +118,7 @@ class XqdocApp extends PolymerElement {
       list: { type: Array, notify: true },
       result: { type: Object, notify: true },
       params: { type: Object, notify: true },
+      selected: { type: Array, notify: true, observer: '_selectionChanged' },
       hash: { type: String, notify: true, observer: '_hashChanged' },
       showHealth: { type: Boolean, notify: true, value: false },
       selectedSuggestionId: { type: String, notify: true, observer: '_moduleSelected' }
@@ -130,6 +127,8 @@ class XqdocApp extends PolymerElement {
 
   connectedCallback() {
     super.connectedCallback();
+
+    const grid = this.$.directory;
 
     this.$.directory.dataProvider = function(params, callback) {
 
@@ -152,6 +151,16 @@ class XqdocApp extends PolymerElement {
       xhr.open('GET', url, true);
       xhr.send();
     };
+
+    this.$.directory.addEventListener('active-item-changed', function(event) {
+      const item = event.detail.value;
+
+      if (item && item.hasChildren == false) {
+        grid.selectedItems = [item];
+      } else {
+        grid.selectedItems = [];
+      }
+    });
 
     // If there is a hash, wait 2.5 seconds and then call _hashChanged to scroll to the hash.
 
@@ -184,6 +193,17 @@ class XqdocApp extends PolymerElement {
     }
   }
 
+  _selectionChanged(newValue, oldValue) {
+      console.log('scrolled to ');
+      if (newValue.length == 1) {
+        this.$.sourceParams.paramsString = 'module=' + newValue[0].fullpath ;
+        //this.$.getdoc.generateRequest();
+      } else {
+        this.$.sourceParams.paramsString = '' ;
+        this.result = {};
+      }
+  }
+
   _moduleSelected(newValue, oldValue) {
     if (newValue != 'None') {
       var p = this.get('params');
@@ -193,12 +213,6 @@ class XqdocApp extends PolymerElement {
         this.notifyPath('params');
       }
     }
-  }
-
-  getlist(request) {
-    var myResponse = request.detail.response;
-    console.log(myResponse);
-//    this.$.directory.items = myResponse;
   }
 
 }
