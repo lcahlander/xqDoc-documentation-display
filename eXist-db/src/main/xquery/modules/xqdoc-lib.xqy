@@ -23,6 +23,7 @@ declare namespace xqdoc = "http://www.xqdoc.org/1.0";
  :  XML database with this collection value.
  :)
 declare variable $xq:XQDOC_COLLECTION as xs:string := "/db/system/xqdoc";
+declare variable $xq:XQDOC_LIBRARY_COLLECTION as xs:string := "/db/system/xqdoc/lib";
 
 (:~
   Generates the JSON for an xqDoc comment
@@ -93,12 +94,14 @@ as xs:string
 (:~
   Generates the JSON for the xqDoc functions
   @param $functions
-  @param $module-uri The URI of the selected module
+  @param $module-path The URI of the selected module
   @author Loren Cahlander
   @version 1.0
   @since 1.0
  :)
-declare function xq:functions($functions as node()*, $module-uri as xs:string?) {
+declare function xq:functions($functions as node()*, $module-path as xs:string) {
+    let $module-uri := $functions[1]/fn:root()//xqdoc:module/xqdoc:uri/text()
+    return
     for $function in $functions
     let $name := fn:string-join($function/xqdoc:name/text())
     let $function-comment := $function/xqdoc:comment
@@ -154,8 +157,12 @@ declare function xq:functions($functions as node()*, $module-uri as xs:string?) 
                 else
                     ""
             },
-            "invoked": array {xq:invoked($function/xqdoc:invoked, $module-uri)},
-            "refVariables": array {xq:ref-variables($function/xqdoc:ref-variable, $module-uri)},
+            "invoked": array {
+                            xq:invoked($function/xqdoc:invoked, $module-path, $module-uri)
+                       },
+            "refVariables": array {
+                            xq:ref-variables($function/xqdoc:ref-variable, $module-path, $module-uri)
+                            },
             "references": array {
                 xq:all-function-references(
                 fn:collection($xq:XQDOC_COLLECTION)/xqdoc:xqdoc/xqdoc:functions/xqdoc:function/xqdoc:invoked[xqdoc:uri = $module-uri][xqdoc:name = $name],
@@ -166,6 +173,19 @@ declare function xq:functions($functions as node()*, $module-uri as xs:string?) 
         }
 };
 
+declare function xq:path-to-uri($uri as xs:string, $import as node()?, $module-path as xs:string, $module-uri as xs:string?) {
+    if ($uri eq $module-uri)
+    then $module-path
+    else if ($import)
+         then $module-path || '/' || xs:string($import/@location)
+         else 
+            let $module := fn:collection($xq:XQDOC_LIBRARY_COLLECTION)/xqdoc:xqdoc[xqdoc:module/xqdoc:uri = $uri]
+            return
+                if ($module)
+                then fn:substring-after(fn:base-uri($module-uri), $xq:XQDOC_COLLECTION)
+                else ""
+};
+
 (:~
   Generates the JSON for the xqDoc function calls from within a function or a body
   @param $invokes
@@ -174,28 +194,28 @@ declare function xq:functions($functions as node()*, $module-uri as xs:string?) 
   @version 1.0
   @since 1.0
  :)
-declare function xq:invoked($invokes as node()*, $module-uri as xs:string?) {
+declare function xq:invoked($invokes as node()*, $module-path as xs:string, $module-uri as xs:string?) {
     for $uri in fn:distinct-values($invokes/xqdoc:uri/text())
-    let $trimmed-uri :=
-    if (fn:starts-with($uri, '"'))
-    then
-        fn:substring(fn:substring($uri, 1, fn:string-length($uri) - 1), 2)
-    else
-        $uri
-        order by $trimmed-uri
+    let $invoke-path := xq:path-to-uri($uri, $invokes/fn:root()//xqdoc:import[xqdoc:uri = $uri], $module-path, $module-uri)
+    order by $uri
     return
         map {
-            "uri": $trimmed-uri,
+            "uri": $uri,
             "functions": array {
                 for $invoke in $invokes[xqdoc:uri = $uri]
                 let $name := $invoke/xqdoc:name/text()
                     order by $name
                 return
                     map {
-                        "uri": $trimmed-uri,
+                        "uri": $uri,
+                        "path": $invoke-path,
                         "name": $name,
                         "isReachable":
-                        if (fn:collection($xq:XQDOC_COLLECTION)/xqdoc:xqdoc[xqdoc:module/xqdoc:uri = $trimmed-uri][xqdoc:functions/xqdoc:function/xqdoc:name = $name])
+                        if (
+                            fn:string-length($invoke-path) gt 0 
+                            and 
+                            fn:doc($xq:XQDOC_COLLECTION || $invoke-path)/xqdoc:xqdoc[xqdoc:functions/xqdoc:function/xqdoc:name = $name]
+                            )
                         then
                             fn:true()
                         else
@@ -219,15 +239,10 @@ declare function xq:invoked($invokes as node()*, $module-uri as xs:string?) {
   @version 1.0
   @since 1.0
  :)
-declare function xq:ref-variables($references as node()*, $module-uri as xs:string?) {
+declare function xq:ref-variables($references as node()*, $module-path as xs:string, $module-uri as xs:string?) {
     for $uri in fn:distinct-values($references/xqdoc:uri/text())
-    let $trimmed-uri :=
-    if (fn:starts-with($uri, '"'))
-    then
-        fn:substring(fn:substring($uri, 1, fn:string-length($uri) - 1), 2)
-    else
-        $uri
-        order by $trimmed-uri
+    let $invoke-path := xq:path-to-uri($uri, $references[1]/fn:root()//xqdoc:import[xqdoc:uri = $uri], $module-path, $module-uri)
+    order by $uri
     return
         map {
             "uri": $uri,
@@ -238,10 +253,15 @@ declare function xq:ref-variables($references as node()*, $module-uri as xs:stri
                     order by $name
                 return
                     map {
-                        "uri": $trimmed-uri,
+                        "uri": $uri,
+                        "path": $invoke-path,
                         "name": $name,
                         "isReachable":
-                        if (fn:collection($xq:XQDOC_COLLECTION)/xqdoc:xqdoc[xqdoc:module/xqdoc:uri = $trimmed-uri][xqdoc:variables/xqdoc:variable/xqdoc:name = $name])
+                        if (
+                            fn:string-length($invoke-path) gt 0 
+                            and 
+                            fn:doc($xq:XQDOC_COLLECTION || $invoke-path)/xqdoc:xqdoc[xqdoc:variables/xqdoc:variable/xqdoc:name = $name]
+                            )
                         then
                             fn:true()
                         else
@@ -405,43 +425,6 @@ declare function xq:imports($imports as node()*) {
         }
 };
 
-declare function xq:nested($path as xs:string)
-{
-    array {
-        for $item in xmldb:get-child-resources($path)
-        let $full-path := $path || "/" || $item
-        return map {
-            "name" : $item,
-            "fullpath" : $full-path
-        },
-        for $item in xmldb:get-child-collections($path)
-        let $full-path := $path || "/" || $item
-        return map {
-            "name" : $item,
-            "fullpath" : $full-path,
-            "children" : xq:nested($full-path)
-        }
-    }
-};
-
-(:~
-  Gets the xqDoc of a module as JSON
-  @param $module The URI of the module to display
-  @author Loren Cahlander
-  @version 1.0
-  @since 1.0
- :)
-declare
-%rest:GET
-%rest:path("/xqdoc/tree")
-%rest:produces("application/json")
-%output:media-type("application/json")
-%output:method("json")
-function xq:get-tree()
-{
-    xq:nested($xq:XQDOC_COLLECTION)
-};
-
 (:~
   Gets the xqDoc of a module as JSON
   @param $module The URI of the module to display
@@ -504,7 +487,8 @@ function xq:get(
 $module as xs:string*
 )
 {
-    let $doc := fn:doc($xq:XQDOC_COLLECTION || xmldb:decode($module[1]))/xqdoc:xqdoc
+    let $decoded-module := if (fn:count($module) gt 0) then xmldb:decode($module[1]) else ""
+    let $doc := fn:doc($xq:XQDOC_COLLECTION || $decoded-module)/xqdoc:xqdoc
     let $module-comment := $doc/xqdoc:module/xqdoc:comment
     return
         map {
@@ -526,17 +510,23 @@ $module as xs:string*
                         fn:false(),
                     "invoked":
                     array {
-                        xq:invoked($doc/xqdoc:module/xqdoc:invoked, $module)
+                        xq:invoked(
+                            $doc/xqdoc:module/xqdoc:invoked, 
+                            $decoded-module, 
+                            ($doc/xqdoc:module/xqdoc:uri/text(), "http://www.w3.org/2005/xquery-local-functions")[1])
                     },
                     "refVariables":
                     array {
-                        xq:ref-variables($doc/xqdoc:module/xqdoc:ref-variable, $module)
+                        xq:ref-variables(
+                            $doc/xqdoc:module/xqdoc:ref-variable, 
+                            $decoded-module, 
+                            ($doc/xqdoc:module/xqdoc:uri/text(), "http://www.w3.org/2005/xquery-local-functions")[1])
                     },
                     "variables":
                     if ($doc/xqdoc:variables)
                     then
                         array {
-                            xq:variables($doc/xqdoc:variables/xqdoc:variable, $doc/xqdoc:module/xqdoc:uri/text())
+                            xq:variables($doc/xqdoc:variables/xqdoc:variable, $decoded-module)
                         }
                     else
                         fn:false(),
@@ -552,7 +542,7 @@ $module as xs:string*
                     if ($doc/xqdoc:functions)
                     then
                         array {
-                            xq:functions($doc/xqdoc:functions/xqdoc:function, $doc/xqdoc:module/xqdoc:uri/text())
+                            xq:functions($doc/xqdoc:functions/xqdoc:function, $decoded-module)
                         }
                     else
                         fn:false(),

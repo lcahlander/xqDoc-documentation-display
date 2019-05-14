@@ -3,11 +3,12 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
     repositories {
+        mavenLocal()
         jcenter()
     }
 
     dependencies {
-        classpath "org.xqdoc:xqdoc:1.9.9"
+        classpath "org.xqdoc:xqdoc:1.9.9.2-SNAPSHOT"
     }
 }
 

@@ -94,7 +94,7 @@ class FunctionDetail extends GestureEventListeners(PolymerElement) {
                   <template class="header">Function Names</template>
                   <template>
                     <template is="dom-repeat" items="{{item.functions}}">
-                      <hash-button name="[[item.name]]" uri="[[item.uri]]" disabled="[[!item.isReachable]]" params="{{params}}" hash="{{hash}}"></hash-button>
+                      <hash-button name="[[item.name]]" uri="[[item.path]]" disabled="[[!item.isReachable]]" params="{{params}}" hash="{{hash}}"></hash-button>
                     </template>
                   </template>
                 </vaadin-grid-column>
