@@ -182,7 +182,7 @@ declare function xq:path-to-uri($uri as xs:string, $import as node()?, $module-p
             let $module := fn:collection($xq:XQDOC_LIBRARY_COLLECTION)/xqdoc:xqdoc[xqdoc:module/xqdoc:uri = $uri]
             return
                 if ($module)
-                then fn:substring-after(fn:base-uri($module-uri), $xq:XQDOC_COLLECTION)
+                then fn:substring-after(fn:base-uri($module), $xq:XQDOC_COLLECTION)
                 else ""
 };
 

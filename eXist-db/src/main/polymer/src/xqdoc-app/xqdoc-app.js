@@ -52,6 +52,9 @@ class XqdocApp extends PolymerElement {
       paper-card {
         width: 100%;
       }
+      #directory {
+        height: 100%;
+      }
         paper-item {
           cursor: pointer;
         }
