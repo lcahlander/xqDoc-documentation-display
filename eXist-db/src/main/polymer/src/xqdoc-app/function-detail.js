@@ -1,7 +1,6 @@
 import {PolymerElement, html} from '@polymer/polymer/polymer-element.js';
 import {GestureEventListeners} from '@polymer/polymer/lib/mixins/gesture-event-listeners.js';
 import '@polymer/paper-card/paper-card.js';
-import 'polymer-code-highlighter/code-highlighter.js';
 import '@polymer/iron-collapse/iron-collapse.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-toggle-button/paper-toggle-button.js';
@@ -50,9 +49,6 @@ class FunctionDetail extends GestureEventListeners(PolymerElement) {
       paper-toggle-button {
         margin-right: 10px;
       }
-      code-highlighter {
-        overflow: scroll;
-      }
     </style>
     <paper-card>
       <paper-toolbar>
@@ -63,7 +59,7 @@ class FunctionDetail extends GestureEventListeners(PolymerElement) {
       <div class="card-content">
         <xqdoc-comment show-detail="[[showDetail]]" show-health="[[showHealth]]" comment="[[item.comment]]" parameters="[[item.parameters]]" return="[[item.return]]"></xqdoc-comment>
         <h2>Signature</h2>
-        <code-highlighter>[[item.signature]]</code-highlighter>
+        <p><b>[[item.signature]]</b></p>
         <iron-collapse id="detailCollapse" opened="{{showDetail}}">
           <div class="conceptcard">
             <template is="dom-if" if="{{_showAnnotations(item)}}">
@@ -138,7 +134,7 @@ class FunctionDetail extends GestureEventListeners(PolymerElement) {
         </iron-collapse>
         <iron-collapse id="codeCollapse" opened="{{showCode}}">
           <div class="conceptcard">
-            <code-highlighter>[[item.body]]</code-highlighter>
+            <pre>[[item.body]]</pre>
           </div>
         </iron-collapse>
       </div>
@@ -157,12 +153,37 @@ class FunctionDetail extends GestureEventListeners(PolymerElement) {
         value: false,
         notify: true
       },
-      item: { type: Object, notify: true },
+      item: { 
+        type: Object, 
+        notify: true,
+        value: { 
+          annotations: [],
+          invoked: [],
+          refVariables: [],
+          references: []
+        } 
+      },
       params: { type: Object, notify: true },
       showHealth: { type: Boolean, notify: true },
       hash: { type: String, notify: true, observer: "_hashChanged" }
     };
   }
+
+    connectedCallback() {
+      super.connectedCallback();
+      this.$.codeCollapse.hide();
+      this.$.detailCollapse.hide();
+    }
+
+    disconnectedCallback() {
+      super.disconnectedCallback();
+      this.item = {
+          annotations: [],
+          invoked: [],
+          refVariables: [],
+          references: []        
+      };
+    }
 
     _showAnnotations(item) {
       if (item.annotations.length > 0) {

@@ -14,6 +14,8 @@ import '@polymer/iron-ajax/iron-ajax.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/paper-item/paper-item.js';
 import '@polymer/paper-card/paper-card.js';
+import '@polymer/paper-dialog/paper-dialog.js';
+import '@polymer/paper-spinner/paper-spinner.js';
 import '@polymer/paper-toast/paper-toast.js';
 import '@polymer/paper-toolbar/paper-toolbar.js';
 import '@polymer/paper-listbox/paper-listbox.js';
@@ -70,11 +72,14 @@ class XqdocApp extends PolymerElement {
       </style>
       <iron-location id="sourceLocation" query="{{query}}" hash="{{hash}}"></iron-location>
       <iron-query-params id="sourceParams" params-string="{{query}}" params-object="{{params}}"></iron-query-params>
-      <iron-ajax auto="true" id="getdoc"
+      <iron-ajax id="getdoc"
         url="/exist/restxq/xqdoc/module"  
         params="[[params]]"
         handle-as="json"
-        last-response="{{result}}"></iron-ajax>
+        on-response="_moduleResponse"></iron-ajax>
+      <paper-dialog id="thespinner" modal>
+        <paper-spinner active></paper-spinner>
+      </paper-dialog>
       <app-drawer-layout fullbleed>
         <app-drawer slot="drawer">
           <app-toolbar>
@@ -105,7 +110,7 @@ class XqdocApp extends PolymerElement {
             <template is="dom-repeat" items="{{result.response.variables}}">
               <variable-detail show-health="[[showHealth]]" item="{{item}}" params="{{params}}" hash="{{hash}}"></variable-detail>
             </template>
-            <template is="dom-repeat" items="{{result.response.functions}}">
+            <template id="repeatFunctions" is="dom-repeat" items="{{result.response.functions}}">
               <function-detail id="function-[[item.name]]" show-health="[[showHealth]]" item="{{item}}" params="{{params}}" hash="{{hash}}"></function-detail>
             </template>
           </template>
@@ -200,7 +205,8 @@ class XqdocApp extends PolymerElement {
       console.log('scrolled to ');
       if (newValue.length == 1) {
         this.$.sourceParams.paramsString = 'module=' + newValue[0].fullpath ;
-        //this.$.getdoc.generateRequest();
+        this.$.thespinner.open();
+        this.$.getdoc.generateRequest();
       } else {
         this.$.sourceParams.paramsString = '' ;
         this.result = {};
@@ -211,11 +217,20 @@ class XqdocApp extends PolymerElement {
     if (newValue != 'None') {
       var p = this.get('params');
       if (p.module != newValue) {
+        if (this.result.response) {
+          this.result.response.functions.splice();
+        }
         this.set( 'params', { module: newValue }  );
         this.set( 'hash', '');
         this.notifyPath('params');
       }
     }
+  }
+
+  _moduleResponse(e) {
+    var resp = e.detail.response;
+    this.result = resp;
+    this.$.thespinner.close();
   }
 
 }

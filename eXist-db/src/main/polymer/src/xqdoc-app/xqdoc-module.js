@@ -1,6 +1,5 @@
 import {PolymerElement, html} from '@polymer/polymer/polymer-element.js';
 import '@polymer/paper-card/paper-card.js';
-import 'polymer-code-highlighter/code-highlighter.js';
 import '@polymer/iron-collapse/iron-collapse.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-toggle-button/paper-toggle-button.js';
@@ -88,7 +87,7 @@ class XQDocModule extends PolymerElement {
         </iron-collapse>
         <iron-collapse id="contentCollapse" opened="{{showCode}}">
           <div class="conceptcard">
-            <code-highlighter>[[item.body]]</code-highlighter>
+            <pre>[[item.body]]</pre>
           </div>
         </iron-collapse>
       </div>

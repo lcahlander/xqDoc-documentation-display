@@ -108,6 +108,7 @@ declare function xq:functions($functions as node()*, $module-path as xs:string) 
         order by $name
     return
         map {
+            "repeatItemType": "function",
             "comment": xq:comment($function-comment),
             "name": $name,
             "signature": fn:string-join($function/xqdoc:signature/text(), " "),
@@ -200,6 +201,7 @@ declare function xq:invoked($invokes as node()*, $module-path as xs:string, $mod
     order by $uri
     return
         map {
+            "repeatItemType": "invoked",
             "uri": $uri,
             "functions": array {
                 for $invoke in $invokes[xqdoc:uri = $uri]
@@ -245,6 +247,7 @@ declare function xq:ref-variables($references as node()*, $module-path as xs:str
     order by $uri
     return
         map {
+            "repeatItemType": "refVariable",
             "uri": $uri,
             "variables":
             array {
@@ -395,6 +398,7 @@ declare function xq:variables($variables as node()*, $module-uri as xs:string?) 
     let $name := $variable/xqdoc:name/text()
     return
         map {
+            "repeatItemType": "variable",
             "comment": xq:comment($variable/xqdoc:comment),
             "uri": $uri,
             "name": $name,
@@ -419,6 +423,7 @@ declare function xq:imports($imports as node()*) {
     let $uri := $import/xqdoc:uri/text()
     return
         map {
+            "repeatItemType": "import",
             "comment": xq:comment($import/xqdoc:comment),
             "uri": fn:substring(fn:substring($uri, 1, fn:string-length($uri) - 1), 2),
             "type": xs:string($import/@type)
@@ -452,6 +457,7 @@ function xq:get-level($page as xs:integer*, $size as xs:integer*, $path as xs:st
         "data": array {
             for $item in $resources
             let $full-path := $path || "/" || $item
+            order by $item
             return map {
                 "name" : fn:substring-before($item, ".xml"),
                 "fullpath" : $full-path,
@@ -459,6 +465,7 @@ function xq:get-level($page as xs:integer*, $size as xs:integer*, $path as xs:st
             },
             for $item in $collections
             let $full-path := $path || "/" || $item
+            order by $item
             return map {
                 "name" : $item,
                 "fullpath" : $full-path,
@@ -508,6 +515,11 @@ $module as xs:string*
                         $doc/xqdoc:module/xqdoc:name/text()
                     else
                         fn:false(),
+                    "dummy": array {(
+                            xq:variables($doc/xqdoc:variables/xqdoc:variable, $decoded-module),
+                            xq:imports($doc/xqdoc:imports/xqdoc:import),
+                            xq:functions($doc/xqdoc:functions/xqdoc:function, $decoded-module)
+                        )},
                     "invoked":
                     array {
                         xq:invoked(
